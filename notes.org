@@ -1,0 +1,68 @@
+Parece que tenho que usar o ALSA para este projeto.
+
+Essa página aqui tem um conteudo bem educativo e exemplos interesantes
+[https://equalarea.com/paul/alsa-audio.html]
+
+Example given by the ALSA creators:
+[https://www.alsa-project.org/alsa-doc/alsa-lib/_2test_2rawmidi_8c-example.html]
+
+
+Pra aprender eu quero primeiro fazer em C e depois em CL usando CFFI.
+
+Exemplo em C (LLM)
+#+begin_src c
+
+
+  /* This crap is make by LLM, be carefull not to get dumber while reading it*/
+  #include <alsa/asoundlib.h>
+  #include <unistd.h> // for sleep
+
+  int main() {
+      snd_seq_t *seq_handle;
+      int port_out;
+      int channel = 0;   // MIDI channel 1
+      int note = 60;     // Middle C
+      int velocity = 100;
+      int dest_client = 20; // Replace with your MIDI device client number from aconnect -l
+      int dest_port = 0;    // Replace with your MIDI device port number
+
+      // Open sequencer
+      snd_seq_open(&seq_handle, "default", SND_SEQ_OPEN_OUTPUT, 0);
+      snd_seq_set_client_name(seq_handle, "Simple MIDI Out");
+
+      // Create an output port
+      port_out = snd_seq_create_simple_port(seq_handle, "Output Port", 
+                        SND_SEQ_PORT_CAP_READ|SND_SEQ_PORT_CAP_SUBS_READ,
+                        SND_SEQ_PORT_TYPE_APPLICATION);
+
+      // Prepare Note On event
+      snd_seq_event_t ev;
+      snd_seq_ev_clear(&ev);
+      snd_seq_ev_set_source(&ev, port_out);
+      snd_seq_ev_set_subs(&ev);
+      snd_seq_ev_set_direct(&ev);
+      ev.type = SND_SEQ_EVENT_NOTEON;
+      ev.data.note.channel = channel;
+      ev.data.note.note = note;
+      ev.data.note.velocity = velocity;
+
+      // Send Note On
+      snd_seq_event_output_direct(seq_handle, &ev);
+
+      sleep(1);
+
+      // Prepare Note Off event
+      ev.type = SND_SEQ_EVENT_NOTEOFF;
+      ev.data.note.velocity = 0;
+
+      // Send Note Off
+      snd_seq_event_output_direct(seq_handle, &ev);
+
+      // Close sequencer
+      snd_seq_close(seq_handle);
+
+      return 0;
+  }
+
+
+#+end_src
